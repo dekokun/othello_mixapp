@@ -127,6 +127,7 @@ var Ai = new Class({
   },
   turn : function(){
     //return this.board.not_selected_areas().getRandom();
+    //
   }
 });
 
