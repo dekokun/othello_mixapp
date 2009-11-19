@@ -54,10 +54,10 @@ var Rule = new Class({
     this.turn = null;
   },
   start : function(){
-    this.board.set(3, 3, 'a');
+    this.board.set(3, 3, 'w');
     this.board.set(4, 3, 'b');
     this.board.set(3, 4, 'b');
-    this.board.set(4, 4, 'a');
+    this.board.set(4, 4, 'w');
     this.turn = 'b';
   },
   turnchange : function(){
@@ -83,14 +83,11 @@ var Rule = new Class({
   },
   reversables : function() {
     var self = this;
-    this.board.not_selected_areas.each(function(c){
+    this.board.not_selected_areas().each(function(c){
       self.reverse_columns(x, y);
     });
   },
-  reverse_columns : function(x, y) {
-    var self = this;
-    var rv = [];
-    /*
+  reversable : function(x, y) {
     var reversable = false;
     [-7, -8, -9, 7, 8, 9, -1, 1].each(function(h){
       var m = n + 1;
@@ -111,7 +108,12 @@ var Rule = new Class({
         }
       }
     });
-    */
+  },
+  reverse_columns : function(x, y) {
+    var self = this;
+    var rv = [];
+    /*
+   */
     return rv;
   },
   game_set : function() {
@@ -141,9 +143,12 @@ var Player = new Class({
     this.ui.add_event('click', function(x, y){self.put_stone(x, y)});
   },
   turn : function() {
+    this.ui.reflesh(this.communicator.board());
   },
   put_stone : function(x, y) {
-    this.communicator.select(x, y, this.color);
+    if(this.communicator.select(x, y, this.color)) {
+      this.ui.reflesh(this.communicator.board());
+    }
   }
 });
 
@@ -156,6 +161,9 @@ var PlayerUI = new Class({
       self.fire_event('click', x, y);
     });
     this.event_hundlers = [];
+  },
+  reflesh : function(board) {
+    this.board.reflesh(board);
   },
   add_event : function(name, func){
     if(!this.event_hundlers[name])
@@ -177,7 +185,9 @@ var BoardUI = new Class({
     this.base = new Element('div', {
       styles : self.theme.base
     });
+    this.matrix = [];
     (8).times(function(x){
+      self.matrix[x] = [];
       (8).times(function(y){
         var elm = new Element('div', {
           styles : self.theme.column,
@@ -187,11 +197,29 @@ var BoardUI = new Class({
             }
           }
         });
+        self.matrix[x][y] = elm;
         self.base.adopt(elm);
       });
     });
     $(stage).empty().adopt(this.base);
     this.event_hundlers = [];
+  },
+  reflesh : function(board) {
+    var self = this;
+    (8).times(function(x){
+      (8).times(function(y){
+        switch(board.get(x,y)) {
+        case 'b' :
+          self.matrix[x][y].innerHTML = 'b';
+          break;
+        case 'w' :
+          self.matrix[x][y].innerHTML = 'w';
+          break;
+        default :
+          self.matrix[x][y].innerHTML = '';
+        }
+      });
+    });
   },
   add_event : function(name, func){
     if(!this.event_hundlers[name])
@@ -226,15 +254,14 @@ var Communicator = new Class({
     this.game = game;
     this.stones = ['b', 'w'];
   },
+  board : function() {
+    return this.game.board;
+  },
   start : function() {
+    this.game.players[0].turn(this.game.rule.reversables());
   },
   select : function(x, y, color) {
-    if(this.game.rule.is_selectable(x, y, color)) {
-      this.game.rule.select(x, y, color);
-      return true;
-    } else {
-      return false;
-    }
+    return this.game.rule.select(x, y, color);
   }
 });
 
